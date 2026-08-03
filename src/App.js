@@ -4,6 +4,8 @@ import React, { useEffect, useState } from 'react';
 import './App.css';
 import Formulario from './Formulario';
 import Tabela from './Tabela';
+import ErrorBoundary from './components/ErrorBoundary';
+import LoadingSpinner from './components/LoadingSpinner';
 
 function App() {
 
@@ -139,8 +141,16 @@ function App() {
     <div className='p-2'>
       <h2 className='text-center pt-4'>CRUD Produtos</h2>
 
-      <Formulario botao={btnCadastrar} eventoTeclado={aoDigitar} cadastrar={cadastrar} obj={objProduto} cancelar={limparFormulario} remover={remover} alterar={alterar} />
-      <Tabela vetor={produtos} selecionar={selecionarProduto} />
+      {btnCadastrar && produtos.length === 0 && (
+        <div className="text-center p-4">
+          <LoadingSpinner text="Loading products..." />
+        </div>
+      )}
+
+      <ErrorBoundary>
+        <Formulario botao={btnCadastrar} eventoTeclado={aoDigitar} cadastrar={cadastrar} obj={objProduto} cancelar={limparFormulario} remover={remover} alterar={alterar} />
+        <Tabela vetor={produtos} selecionar={selecionarProduto} />
+      </ErrorBoundary>
     </div>
   );
 }
