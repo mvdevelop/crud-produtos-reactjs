@@ -1,5 +1,7 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import { errorHandler, withRetry, ApiError } from './utils/errorHandler';
+import { productService } from './services/productService';
 
 import './App.css';
 import Formulario from './Formulario';
@@ -7,6 +9,21 @@ import Tabela from './Tabela';
 import ErrorBoundary from './components/ErrorBoundary';
 import LoadingSpinner from './components/LoadingSpinner';
 
+/**
+ * Main Application Component
+ *
+ * This is the core component of the CRUD Products application.
+ * Manages product state, handles API operations, and coordinates UI interactions.
+ *
+ * Key Features:
+ * - Error boundaries for application stability
+ * - Loading states with spinners
+ * - Product CRUD operations (Create, Read, Update, Delete)
+ * - Form validation and data management
+ * - Responsive UI with modern React patterns
+ *
+ * @returns {JSX.Element} The main application interface
+ */
 function App() {
 
   // Objeto produto
