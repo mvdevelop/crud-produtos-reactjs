@@ -1,13 +1,11 @@
 
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { errorHandler, withRetry, ApiError } from './utils/errorHandler';
-import { productService } from './services/productService';
+import { ErrorBoundary, ErrorFallback } from './components/ErrorBoundary';
+import { LoadingSpinner } from './components/LoadingSpinner';
 
 import './App.css';
 import Formulario from './Formulario';
 import Tabela from './Tabela';
-import ErrorBoundary from './components/ErrorBoundary';
-import LoadingSpinner from './components/LoadingSpinner';
 
 /**
  * Main Application Component
@@ -26,148 +24,209 @@ import LoadingSpinner from './components/LoadingSpinner';
  */
 function App() {
 
-  // Objeto produto
-  const produto = {
-    //codigo : 0,
-    nome : '',
-    marca : '' 
-  }
+  // Initial product template
+  const initialProduto = {
+    codigo: 0,
+    nome: '',
+    marca: ''
+  };
 
-  const [ btnCadastrar, setBtnCadastrar ] = useState(true);
-  const [ produtos, setProdutos ] = useState([]);
-  const [ objProduto, setObjProduto ] = useState(produto);
+  // Component state management
+  const [isLoading, setIsLoading] = useState(true);
+  const [btnCadastrar, setBtnCadastrar] = useState(true);
+  const [produtos, setProdutos] = useState([]);
+  const [objProduto, setObjProduto] = useState(initialProduto);
 
+  /**
+   * Fetch initial product data on component mount
+   * Uses useEffect hook with empty dependency array for single execution
+   */
   useEffect(() => {
-    fetch("http://localhost:8080/listar")
-    .then(retorno => retorno.json())
-    .then(retorno_convertido => setProdutos(retorno_convertido));
+    const fetchProducts = async () => {
+      try {
+        setIsLoading(true);
+        const response = await fetch("http://localhost:8080/listar");
+        const data = await response.json();
+        setProdutos(data);
+      } catch (error) {
+        console.error('Error fetching products:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchProducts();
   }, []);
 
-  // Obtendo os dados do formulário
-  const aoDigitar = (e) => {
-    setObjProduto({...objProduto, [e.target.name]:e.target.value});
-  }
+  /**
+   * Handle form input changes
+   * Updates product object with current input values
+   *
+   * @param {React.ChangeEvent} e - The input change event
+   */
+  const aoDigitar = useCallback((e) => {
+    setObjProduto(prevProduto => ({
+      ...prevProduto,
+      [e.target.name]: e.target.value
+    }));
+  }, []);
 
-  // Cadastrar produto 
-  const cadastrar = () => {
-    fetch('http://localhost:8080/cadastrar', {
-      method:'post',
-      body:JSON.stringify(objProduto),
-      headers:{
-        'Content-type':'application/json',
-        'Accept':'application/json'
-      }
-    })
-    .then(retorno => retorno.json())
-    .then(retorno_convertido => {
-      if (retorno_convertido.mensagem !== undefined) {
-        alert(retorno_convertido.mensagem);
+  /**
+   * Handle product submission
+   * Sends new product data to the API and updates local state
+   */
+  const cadastrar = useCallback(async () => {
+    try {
+      const response = await fetch('http://localhost:8080/cadastrar', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(objProduto)
+      });
+
+      const data = await response.json();
+
+      if (data.mensagem !== undefined) {
+        alert(data.mensagem);
       } else {
-        setProdutos([...produtos, retorno_convertido]);
+        setProdutos(prevProdutos => [...prevProdutos, data]);
         alert('Produto cadastrado com sucesso!');
         limparFormulario();
       }
-    });
-  }
+    } catch (error) {
+      console.error('Error creating product:', error);
+      alert('Error creating product. Please try again.');
+    }
+  }, [objProduto]);
 
-  // Remover produto 
-  const remover = () => {
-    fetch(`http://localhost:8080/remover/${objProduto.codigo}`, {
-      method:'delete',
-      headers:{
-        'Content-type':'application/json',
-        'Accept':'application/json'
-      }
-    }) 
-    .then(retorno => retorno.json())
-    .then(retorno_convertido => {
-      // Mensagem 
-      alert(retorno_convertido.mensagem);
+  /**
+   * Handle product deletion
+   * Sends delete request to API and updates local state
+   */
+  const remover = useCallback(async () => {
+    if (!objProduto.codigo) {
+      alert('Please select a product to delete');
+      return;
+    }
 
-      // Cópia do vetor de produtos
-      let vetorTemp = [...produtos];
-
-      // Índice 
-      let indice = vetorTemp.findIndex((p) => {
-        return p.codigo === objProduto.codigo;
+    try {
+      const response = await fetch(`http://localhost:8080/remover/${objProduto.codigo}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
       });
-      
-      // Remover produto do vetorTemp
-      vetorTemp.splice(indice, 1);
 
-      // Atualizar o vetor de produtos
-      setProdutos(vetorTemp);
+      const data = await response.json();
+      alert(data.mensagem);
 
-      // Limpar formulário
-      limparFormulario(); 
+      // Remove product from local state
+      setProdutos(prevProdutos =>
+        prevProdutos.filter(product => product.codigo !== objProduto.codigo)
+      );
 
-    });
-  }
+      limparFormulario();
+    } catch (error) {
+      console.error('Error deleting product:', error);
+      alert('Error deleting product. Please try again.');
+    }
+  }, [objProduto.codigo]);
 
-  // Alterar produto 
-  const alterar = () => {
-    fetch('http://localhost:8080/alterar', {
-      method:'put',
-      body:JSON.stringify(objProduto),
-      headers:{
-        'Content-type':'application/json',
-        'Accept':'application/json'
-      }
-    })
-    .then(retorno => retorno.json())
-    .then(retorno_convertido => {
-      if (retorno_convertido.mensagem !== undefined) {
-        alert(retorno_convertido.mensagem);
+  /**
+   * Handle product update
+   * Sends update request to API and updates local state
+   */
+  const alterar = useCallback(async () => {
+    if (!objProduto.codigo) {
+      alert('Please select a product to update');
+      return;
+    }
+
+    try {
+      const response = await fetch('http://localhost:8080/alterar', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(objProduto)
+      });
+
+      const data = await response.json();
+
+      if (data.mensagem !== undefined) {
+        alert(data.mensagem);
       } else {
-        // Mensagem 
         alert('Produto alterado com sucesso!');
 
-        // Cópia do vetor de produtos
-        let vetorTemp = [...produtos];
+        // Update product in local state
+        setProdutos(prevProdutos =>
+          prevProdutos.map(product =>
+            product.codigo === objProduto.codigo ? objProduto : product
+          )
+        );
 
-        // Índice 
-        let indice = vetorTemp.findIndex((p) => {
-          return p.codigo === objProduto.codigo;
-        });
-        
-        // Alterar produto do vetorTemp
-        vetorTemp[indice] = objProduto;
-
-        // Atualizar o vetor de produtos
-        setProdutos(vetorTemp);
-
-        // Limpar o formulário
         limparFormulario();
-        }
-    });
-  }
+      }
+    } catch (error) {
+      console.error('Error updating product:', error);
+      alert('Error updating product. Please try again.');
+    }
+  }, [objProduto]);
 
-  // Limpar formulário
-  const limparFormulario = () => {
-    setObjProduto(produto);
+  /**
+   * Reset form to initial state
+   * Clears form data and switches to create mode
+   */
+  const limparFormulario = useCallback(() => {
+    setObjProduto(initialProduto);
     setBtnCadastrar(true);
-  }
+  }, []);
 
-  // Selecionar produto
-  const selecionarProduto = (indice) => {
-    setObjProduto(produtos[indice]);
-    setBtnCadastrar(false);
-  }
+  /**
+   * Handle product selection from table
+   * Populates form with selected product data
+   *
+   * @param {number} indice - Index of selected product in the products array
+   */
+  const selecionarProduto = useCallback((indice) => {
+    if (produtos[indice]) {
+      setObjProduto(produtos[indice]);
+      setBtnCadastrar(false);
+    }
+  }, [produtos]);
 
   return (
-    <div className='p-2'>
-      <h2 className='text-center pt-4'>CRUD Produtos</h2>
+    <div className='p-2 app-container'>
+      <header className='app-header'>
+        <h2 className='text-center pt-4'>CRUD Produtos</h2>
+      </header>
 
-      {btnCadastrar && produtos.length === 0 && (
-        <div className="text-center p-4">
-          <LoadingSpinner text="Loading products..." />
-        </div>
-      )}
+      <main className='app-main'>
+        {isLoading && (
+          <div className="text-center p-4">
+            <LoadingSpinner text="Loading products..." size="large" />
+          </div>
+        )}
 
-      <ErrorBoundary>
-        <Formulario botao={btnCadastrar} eventoTeclado={aoDigitar} cadastrar={cadastrar} obj={objProduto} cancelar={limparFormulario} remover={remover} alterar={alterar} />
-        <Tabela vetor={produtos} selecionar={selecionarProduto} />
-      </ErrorBoundary>
+        {!isLoading && (
+          <ErrorBoundary>
+            <Formulario
+              botao={btnCadastrar}
+              eventoTeclado={aoDigitar}
+              cadastrar={cadastrar}
+              obj={objProduto}
+              cancelar={limparFormulario}
+              remover={remover}
+              alterar={alterar}
+            />
+            <Tabela vetor={produtos} selecionar={selecionarProduto} />
+          </ErrorBoundary>
+        )}
+      </main>
     </div>
   );
 }
