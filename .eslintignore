@@ -1,0 +1,79 @@
+# Build and distribution files
+build/
+dist/
+*.min.js
+*.bundle.js
+
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+.npm
+
+# Testing
+coverage/
+*.test.js
+*.test.jsx
+*.spec.js
+*.spec.jsx
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment files
+.env*
+
+# Logs
+*.log
+
+# Temporary files
+tmp/
+*~
+
+# Package manager
+pnpm-lock.yaml
+yarn.lock
+
+# Build outputs
+*.css.map
+*.js.map
+*.ts.map
+
+# Cache files
+.cache
+node_modules/.bin
+
+# Docker
+Dockerfile*
+docker-compose*
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+*.md
+
+# Services
+backend/
+server.js
+package.json
+
+# Database
+db.json
+*.sqlite
+*.sqlite3
+
+# Deployments
+.vercel/
+.netlify/
+**/.env.production.local
+**/.env.development.local
+**/.env.test.local
