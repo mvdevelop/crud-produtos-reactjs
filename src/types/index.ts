@@ -1,3 +1,5 @@
+import React from 'react';
+
 // Product type definition for the CRUD application
 export interface Produto {
   codigo: number;
