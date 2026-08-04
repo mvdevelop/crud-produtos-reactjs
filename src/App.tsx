@@ -1,10 +1,11 @@
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { ErrorBoundary, ErrorFallback } from './components/ErrorBoundary';
-import { LoadingSpinner } from './components/LoadingSpinner';
+import React, { useEffect, useState, useCallback } from 'react';
+import ErrorBoundary from './components/ErrorBoundary';
+import LoadingSpinner from './components/LoadingSpinner';
 
 import './App.css';
 import Formulario from './Formulario';
 import Tabela from './Tabela';
+import { Produto } from './types';
 
 /**
  * Main Application Component

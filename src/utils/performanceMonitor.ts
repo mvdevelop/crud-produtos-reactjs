@@ -65,12 +65,18 @@ export interface AggregatedMetrics {
 }
 
 class PerformanceMonitor {
-  private metrics = {
-    renderTimes: Metric[],
-    apiCalls: Metric[],
-    memoryUsage: Metric[],
-    fps: Metric[],
-    errors: Metric[]
+  private metrics: {
+    renderTimes: Metric[];
+    apiCalls: Metric[];
+    memoryUsage: Metric[];
+    fps: Metric[];
+    errors: Metric[];
+  } = {
+    renderTimes: [],
+    apiCalls: [],
+    memoryUsage: [],
+    fps: [],
+    errors: []
   };
   private isMonitoring = false;
   private startTime = Date.now();

@@ -76,7 +76,7 @@ export class ProductService {
     });
   }
 
-  static validateProductData(productData: Partial<Produto>): { errors: any; isValid: boolean } {
+  static validateProductData(productData: Partial<Produto>): { errors: Record<string, any>; isValid: boolean } {
     const { errors, isValid } = validateForm(productData as FormData);
     return { errors, isValid };
   }
